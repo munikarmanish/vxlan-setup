@@ -26,7 +26,10 @@ sudo ip link set $vx master $br
 sudo ip link add $eth0 type veth peer name $eth0p
 sudo ip link set $eth0 netns $netns
 sudo ip link set $eth0p master $br
-sudo ip link set $eth0 mtu 1450   # 1500 - 50 (vxlan adds 50 bytes of header)
+
+# set the mtu for the virtual devices
+#  = 1500 - 50 (vxlan adds 50 bytes of header)
+sudo ip netns exec $netns ip link set $eth0 mtu 1450
 sudo ip link set $eth0p mtu 1450
 
 # set the ip
