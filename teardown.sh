@@ -1,13 +1,12 @@
 #!/bin/bash
 
-netns=kfc             # network namespace for tenant
-br="$netns-br0"       # name for bridge device
-vx="$netns-vxlan0"    # name for vxlan device
-
 set -x
 
-sudo ip netns delete $netns
-sudo ip link delete $br
-sudo ip link delete $vx
+sudo ip link delete $vethp_
+sudo ovs-vsctl del-port $vx_
+sudo ip link delete $vx_
+sudo ovs-vsctl del-br $br_
+sudo ip link delete $br_
+sudo ip netns del $ns_
 
 set +x

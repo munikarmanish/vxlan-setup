@@ -1,45 +1,38 @@
 #!/bin/bash
 
-nic=eno1              # name of physical interface
-netns=kfc             # network namespace for tenant
-ip=10.0.0.1/24        # private ip for the tenant network interface
-vni=123               # vxlan network id
-group=224.0.0.1       # vxlan multicast group ip
-br="$netns-br0"       # name for bridge device
-vx="$netns-vxlan0"    # name for vxlan device
-eth0="$netns-eth0"    # name for veth interface in tenant namespace
-eth0p="$netns-eth0p"  # name for veth interface in host namespace
-
 set -x
 
-# add a namespace
-sudo ip netns add $netns
+## Create the bridge and vxlan interface
 
-# add a bridge
-sudo ip link add $br type bridge
+nic_="eno1"      # physical device name
+vni_=123         # vxlan network id
+vx_="vxlan$vni_"  # name of the vxlan interface
+br_="br$vni_"     # name of overlay bridge
+group_=239.1.1.1 # vxlan ip multicast address
+port_=0          # vxlan port (0 = linux default, 4789 = standard default)
 
-# add a vxlan device and attach to bridge
-sudo ip link add $vx type vxlan id $vni dev $nic group $group dstport 0
-sudo ip link set $vx master $br
+sudo ip link add $vx_ type vxlan id $vni_ group $group_ dstport $port_ dev $nic_
+sudo ip link add $br_ type bridge
+sudo ip link set $vx_ master $br_
+sudo ip link set $vx_ up
+sudo ip link set $br_ up
 
-# add veth pairs
-sudo ip link add $eth0 type veth peer name $eth0p
-sudo ip link set $eth0 netns $netns
-sudo ip link set $eth0p master $br
+## Create the virtual interface connected to the overlay network
 
-# set the mtu for the virtual devices
-#  = 1500 - 50 (vxlan adds 50 bytes of header)
-sudo ip netns exec $netns ip link set $eth0 mtu 1450
-sudo ip link set $eth0p mtu 1450
+ns_="ns0"            # network namespace for the virtual interface
+veth_="veth0"        # virtual interface name
+vethp_="${veth_}p"    # virtual interface name for the peer
+ip_=10.0.1.2/24      # ip address for virtual interface
 
-# set the ip
-sudo ip netns exec $netns ip addr add dev $eth0 $ip
+sudo ip netns add $ns_
 
-# turn on them devices
-sudo ip link set $br up
-sudo ip link set $vx up
-sudo ip link set $eth0p up
-sudo ip netns exec $netns ip link set lo up
-sudo ip netns exec $netns ip link set $eth0 up
+# VxLAN adds 50 bytes of headers, so MTU has to be adjusted
+sudo ip link add $veth_ mtu 1450 type veth peer name $vethp_ mtu 1450
+sudo ip link set $vethp_ master $br_
+sudo ip link set $veth_ netns $ns_
+sudo ip netns exec $ns_ ip addr add $ip_ dev $veth_
+sudo ip netns exec $ns_ ip link set $veth_ up
+sudo ip netns exec $ns_ ip link set lo up
+sudo ip link set $vethp_ up
 
 set +x
