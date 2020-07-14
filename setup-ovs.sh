@@ -15,8 +15,8 @@ sudo ip netns add $ns
 sudo ovs-vsctl add-port $br $veth -- set interface $veth type=internal
 sudo ip link set $veth netns $ns
 sudo ip netns exec $ns ip addr add $ip dev $veth
-sudo ip netns exec $ns ip link set veth0 mtu 1450
-sudo ip netns exec $ns ip link set veth0 up
+sudo ip netns exec $ns ip link set $veth mtu 1450
+sudo ip netns exec $ns ip link set $veth up
 sudo ip netns exec $ns ip link set lo up
 
 set +x
