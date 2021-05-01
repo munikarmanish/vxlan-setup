@@ -7,7 +7,8 @@ set -x
 ## create bridge and vtep
 sudo ovs-vsctl add-br $br
 sudo ovs-vsctl add-port $br $vx -- set interface $vx type=vxlan \
-    options:key=$vni options:remote_ip=$remote_ip options:dst_port=$port
+    options:key=$vni options:local_ip=$local_ip options:remote_ip=$remote_ip \
+    options:dst_port=$port
 
 ## create node
 sudo ip netns add $ns
